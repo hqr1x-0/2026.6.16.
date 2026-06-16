@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>メディリンク - 医療連携お薬＆体調管理アプリ</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Animation Styles -->
+  <style>
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .animate-pulse-slow {
+      animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 flex flex-col text-slate-800">
+
+  <!-- ================= HEADER & ROLE SWITCHER ================= -->
+  <header class="bg-gradient-to-r from-teal-600 to-cyan-700 text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 py-2 flex flex-col md:flex-row justify-between items-center gap-2">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center gap-2">
+        <!-- Heart Icon (SVG) -->
+        <svg class="text-pink-300 fill-current animate-pulse w-7 h-7" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+        </svg>
+        <div>
+          <h1 class="font-bold text-lg tracking-wide flex items-center gap-1.5">
+            メディリンク <span class="text-[10px] bg-teal-500 px-2 py-0.5 rounded-full font-normal">デモシステム</span>
+          </h1>
+          <p class="text-[9px] text-teal-100">かかりつけ医 ✕ 患者・家族 リアルタイム連携アプリ</p>
+        </div>
+      </div>
+
+      <!-- Mode Switcher Tabs -->
+      <div class="flex bg-teal-800/60 p-1 rounded-lg text-xs gap-1 w-full md:w-auto overflow-x-auto justify-start" id="role-switcher">
+        <button onclick="switchRole('patient_easy')" id="btn-patient_easy" class="role-btn flex items-center gap-1 px-3 py-1.5 rounded-md font-medium whitespace-nowrap transition-all bg-white text-teal-800 shadow-sm">
+          <!-- Smartphone Icon -->
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+          患者 (かんたん)
+        </button>
+        <button onclick="switchRole('patient_normal')" id="btn-patient_normal" class="role-btn flex items-center gap-1 px-3 py-1.5 rounded-md font-medium whitespace-nowrap transition-all text-teal-100 hover:bg-teal-700/50">
+          <!-- Layers Icon -->
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polygon points="2 17 12 22 22 17"></polygon><polygon points="2 12 12 17 22 12"></polygon></svg>
+          患者 (ふつう)
+        </button>
+        <button onclick="switchRole('doctor')" id="btn-doctor" class="role-btn flex items-center gap-1 px-3 py-1.5 rounded-md font-medium whitespace-nowrap transition-all text-teal-100 hover:bg-teal-700/50 relative">
+          <!-- Stethoscope Icon -->
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+          医師専用Web
+          <span id="doctor-badge" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full animate-bounce"></span>
+        </button>
+        <button onclick="switchRole('family')" id="btn-family" class="role-btn flex items-center gap-1 px-3 py-1.5 rounded-md font-medium whitespace-nowrap transition-all text-teal-100 hover:bg-teal-700/50">
+          <!-- Users Icon -->
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          ご家族画面
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ================= API KEY & EXPLANATION BAR ================= -->
+  <div class="bg-emerald-50 border-b border-emerald-100 text-xs text-emerald-800 px-4 py-2">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+      <p class="flex items-center gap-1">
+        <!-- Info Icon -->
+        <svg class="text-emerald-600 shrink-0 w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <span>【デモ動作】各画面での操作が他の画面（医師や家族）に<strong>リアルタイムに即時連動</strong>します。</span>
+      </p>
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <span class="font-semibold whitespace-nowrap text-[10px] bg-emerald-200/60 px-1.5 py-0.5 rounded text-emerald-900">Gemini連携:</span>
+        <input 
+          type="password" 
+          id="api-key-input"
+          placeholder="APIキー（任意。空なら疑似AI動作）"
+          class="px-2 py-0.5 text-[11px] rounded border border-emerald-300 w-full sm:w-48 focus:outline-emerald-500 bg-white"
+        />
+        <button 
+          onclick="openPricingModal()"
+          class="text-teal-700 hover:underline font-bold flex items-center gap-0.5 shrink-0"
+        >
+          <!-- Credit Card Icon -->
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+          月額150円の仕組みとは？
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MAIN CONTENT CONTAINER ================= -->
+  <main class="flex-grow max-w-6xl w-full mx-auto p-4 flex flex-col gap-6">
+    
+    <!-- ================= ROLE 1: PATIENT EASY ================= -->
+    <div id="panel-patient_easy" class="role-panel space-y-6">
+      
+      <!-- Doctor's Live Notification -->
+      <div id="easy-doctor-notification" class="hidden bg-rose-50 border-2 border-rose-300 rounded-2xl p-5 shadow-md animate-pulse">
+        <div class="flex items-start gap-3">
+          <!-- Bell Icon -->
+          <svg class="text-rose-600 shrink-0 fill-current mt-1 w-7 h-7" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <div class="space-y-1">
+            <span class="bg-rose-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              先生からの大切なご指示 (<span class="reply-time">--:--</span>)
+            </span>
+            <h4 class="font-bold text-lg text-rose-900 mt-1" id="easy-doctor-title">
+              🏥 すぐに診察に来てください
+            </h4>
+            <p id="easy-doctor-body" class="text-slate-700 whitespace-pre-wrap font-medium text-base mt-2 bg-white/80 p-3 rounded-lg border border-rose-100">
+              --
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Condition One-Tap Record Card -->
+      <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 text-center space-y-4">
+        <span class="text-slate-500 text-sm font-bold block">1日1回・1タップ体調きろく</span>
+        <h2 class="text-2xl font-bold text-slate-800">
+          山田 太郎さん、今日の体調はいかがですか？
+        </h2>
+        
+        <div class="grid grid-cols-2 gap-4 max-w-lg mx-auto pt-2">
+          <button
+            onclick="setCondition('good')"
+            id="easy-cond-good"
+            class="py-6 px-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-3 transition-all border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-700"
+          >
+            <span class="text-5xl">😄</span>
+            <span class="text-xl font-bold">元気です！</span>
+            <span class="text-xs text-slate-400">（1秒で記録終了）</span>
+          </button>
+
+          <button
+            onclick="setCondition('bad')"
+            id="easy-cond-bad"
+            class="py-6 px-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-3 transition-all border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-700"
+          >
+            <span class="text-5xl">😢</span>
+            <span class="text-xl font-bold text-rose-700">すこししんどい</span>
+            <span class="text-xs text-rose-400">（相談がはじまります）</span>
+          </button>
+        </div>
+
+        <div id="easy-success-msg" class="hidden bg-emerald-50 text-emerald-800 py-3 rounded-xl max-w-lg mx-auto text-base font-bold flex items-center justify-center gap-2">
+          <!-- Check Circle Icon -->
+          <svg class="text-emerald-600 w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          本日の体調を「元気」と記録しました！
+        </div>
+      </div>
+
+      <!-- Medicine List Card (Easy) -->
+      <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-4">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+            💊 今日のお薬
+          </h3>
+          <span class="text-sm text-slate-400 font-medium">お薬をのんだら押してください</span>
+        </div>
+
+        <!-- Regular Medicines Container -->
+        <div class="space-y-3" id="easy-medicines-list">
+          <!-- JavaScript will inject medicine items here -->
+        </div>
+
+        <!-- Tonpuku Button -->
+        <div class="pt-2 border-t border-dashed border-slate-200">
+          <button
+            onclick="openTonpukuModal()"
+            class="w-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white py-4 rounded-2xl text-lg font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+          >
+            <span>💊</span> 頓服（とんぷく）をのんだ時
+          </button>
+        </div>
+
+        <!-- Tonpuku Logs -->
+        <div id="easy-tonpuku-log-container" class="hidden bg-amber-50 rounded-xl p-3 text-xs text-amber-800">
+          <span class="font-bold">頓服の記録: </span>
+          <span id="easy-tonpuku-logs-list"></span>
+        </div>
+      </div>
+
+      <!-- AI Chat Assistant (Easy) -->
+      <div id="easy-chat-section" class="hidden bg-white rounded-3xl p-6 shadow-md border-2 border-teal-200 space-y-4">
+        <div class="flex justify-between items-center border-b pb-3">
+          <span class="text-lg font-bold text-slate-800 flex items-center gap-1.5">
+            <!-- Message Square Icon -->
+            <svg class="text-teal-600 w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            あんしんAI体調相談
+          </span>
+          <button 
+            onclick="closeChat()"
+            class="text-slate-400 hover:text-slate-600 font-bold"
+          >
+            閉じる
+          </button>
+        </div>
+
+        <!-- Chat Bubble Display -->
+        <div id="easy-chat-messages" class="space-y-4 max-h-96 overflow-y-auto p-2 bg-slate-50 rounded-2xl">
+          <!-- Rendered messages -->
+        </div>
+
+        <!-- Dynamic Selection Inputs -->
+        <div id="easy-chat-inputs" class="space-y-2">
+          <!-- Rendered option buttons -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================= ROLE 2: PATIENT NORMAL ================= -->
+    <div id="panel-patient_normal" class="role-panel hidden space-y-6">
+      
+      <div class="w-full flex flex-col lg:flex-row gap-6">
+        
+        <!-- Left Column: Medication and Calendar -->
+        <div class="flex-grow space-y-6">
+          
+          <!-- Hello Greeting -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex justify-between items-center">
+            <div>
+              <h3 class="font-bold text-lg text-slate-800">こんにちは、山田 太郎 様</h3>
+              <p class="text-xs text-slate-400 mt-0.5">今週の服用達成率: <span class="text-teal-600 font-bold">88%</span> (優秀です！)</p>
+            </div>
+            <div class="text-right">
+              <span class="text-xs font-semibold bg-blue-50 text-blue-700 px-2 py-1 rounded-md">
+                次回受診: 6月25日 (木) 10:00
+              </span>
+            </div>
+          </div>
+
+          <!-- Doctor's Reply Notification (Normal UI) -->
+          <div id="normal-doctor-notification" class="hidden bg-indigo-50 border border-indigo-200 rounded-2xl p-4 flex gap-3 shadow-xs">
+            <!-- Bell Icon -->
+            <svg class="text-indigo-600 shrink-0 mt-0.5 w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="text-xs bg-indigo-600 text-white font-bold px-2 py-0.5 rounded">
+                  医師の指示
+                </span>
+                <span class="text-xs text-slate-400"><span class="reply-time">--:--</span> 受信</span>
+              </div>
+              <p id="normal-doctor-body" class="text-sm text-slate-700 whitespace-pre-wrap mt-1">
+                --
+              </p>
+            </div>
+          </div>
+
+          <!-- Regular Med Schedule Card -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
+            <div class="flex justify-between items-center">
+              <h4 class="font-bold text-slate-800 flex items-center gap-1.5">
+                <!-- Clock Icon -->
+                <svg class="text-teal-600 w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                今日のお薬スケジュール
+              </h4>
+              <span class="text-xs text-slate-400">ワンクリックでチェック</span>
+            </div>
+
+            <div class="divide-y divide-slate-100" id="normal-medicines-list">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
+          <!-- History Logs Grid -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
+            <div class="flex justify-between items-center">
+              <h4 class="font-bold text-slate-800 flex items-center gap-1.5">
+                <!-- Trending Up Icon -->
+                <svg class="text-teal-600 w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                最近の体調推移と服用達成率
+              </h4>
+            </div>
+
+            <div class="grid grid-cols-4 sm:grid-cols-5 gap-2 text-center" id="history-logs-grid">
+              <!-- Grid items injected by JS, 5th slot is today -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column: AI Chat Panel -->
+        <div class="w-full lg:w-96 shrink-0 space-y-6">
+          
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
+            <div class="flex justify-between items-center">
+              <h4 class="font-bold text-slate-800 flex items-center gap-1.5">
+                <!-- Message Square Icon -->
+                <svg class="text-teal-600 w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                AIチャット体調相談
+              </h4>
+              <button 
+                onclick="setCondition('bad')"
+                id="normal-start-chat-btn"
+                class="text-xs bg-rose-50 text-rose-700 hover:bg-rose-100 px-2 py-1 rounded-md font-bold transition-all"
+              >
+                相談をはじめる
+              </button>
+            </div>
+
+            <!-- Normal Chat Content Area -->
+            <div id="normal-chat-container" class="hidden space-y-4">
+              <div id="normal-chat-messages" class="space-y-3 max-h-64 overflow-y-auto p-2 bg-slate-50 rounded-xl border text-xs">
+                <!-- JS Chat messages -->
+              </div>
+
+              <!-- Options UI for Normal Chat -->
+              <div id="normal-chat-inputs" class="space-y-1">
+                <!-- Buttons dynamically loaded -->
+              </div>
+            </div>
+
+            <!-- Standby message -->
+            <div id="normal-chat-placeholder" class="text-center py-6 space-y-2">
+              <p class="text-xs text-slate-400">今日は「しんどい」時以外のチャット相談は起動していません。元気に過ごせるのが一番ですね！</p>
+              <button 
+                onclick="setCondition('bad')"
+                class="text-xs text-teal-600 hover:underline font-bold"
+              >
+                不調時の相談をデモ起動する →
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Family Sync Status -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-2 text-xs">
+            <span class="font-bold text-slate-700 flex items-center gap-1">
+              <!-- Users Icon -->
+              <svg class="text-blue-500 w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              家族見守り連携中
+            </span>
+            <p class="text-slate-400">ご家族（長男 夫婦）へ本日の薬の服用と体調データがリアルタイムで共有されています。</p>
+            <div class="bg-slate-50 p-2 rounded-lg text-[11px] flex justify-between">
+              <span>最終同期: 先ほど</span>
+              <span class="text-emerald-600 font-bold">● 同期中</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ================= ROLE 3: DOCTOR SYSTEM ================= -->
+    <div id="panel-doctor" class="role-panel hidden space-y-6">
+      
+      <div class="w-full flex flex-col lg:flex-row gap-6">
+        
+        <!-- Left Sidebar: Patient List -->
+        <div class="w-full lg:w-80 shrink-0 space-y-4">
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+            <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+              <!-- Users Icon -->
+              <svg class="text-teal-600 w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+              担当患者一覧
+            </h4>
+            
+            <div class="space-y-2">
+              <!-- Patient Card (Yamada) -->
+              <div id="doctor-patient-yamada" class="p-3 rounded-xl border-2 border-teal-500 bg-teal-50/20 cursor-pointer transition-all">
+                <div class="flex justify-between items-start">
+                  <h5 class="font-bold text-sm text-slate-800">山田 太郎 (78歳)</h5>
+                  <span id="doctor-alert-badge" class="hidden bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse">
+                    要対応 (AI要約あり)
+                  </span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">主病名: 高血圧・変形性膝関節症</p>
+              </div>
+
+              <!-- Patient Card (Sato) -->
+              <div class="p-3 rounded-xl border border-slate-200 cursor-not-allowed opacity-60">
+                <div class="flex justify-between items-start">
+                  <h5 class="font-bold text-sm text-slate-600">佐藤 花子 (82歳)</h5>
+                  <span class="bg-slate-100 text-slate-500 text-[9px] px-1.5 py-0.5 rounded">
+                    問題なし
+                  </span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">主病名: 骨祖鬆症・糖尿病</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Medical Compliance Guardrail -->
+          <div class="bg-slate-800 text-slate-200 rounded-2xl p-4 text-[11px] space-y-2">
+            <span class="font-bold text-amber-400 flex items-center gap-1">
+              <!-- Alert Triangle Icon -->
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              医療法遵守の医師連携システム
+            </span>
+            <p class="leading-relaxed text-slate-300">
+              本システムは、患者の入力に基づきAIが自動的に要約し提示しますが、最終判定は医師が確認してワンタップ指示を行う仕組みになっております。これにより、AIによる勝手な診断行為（医師法第17条違反）を回避し、医師の監督下での適切な遠隔相談指導（オンライン受診勧奨）を実現します。
+            </p>
+          </div>
+        </div>
+
+        <!-- Right Core Panel: Detailed Info & Actions -->
+        <div class="flex-grow space-y-6">
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-6">
+            
+            <!-- Patient Mini EMR Header -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
+              <div>
+                <span class="text-xs text-slate-400">患者コード: P-908722</span>
+                <h3 class="text-xl font-bold text-slate-800">山田 太郎 (78歳) / 男性</h3>
+                <p class="text-xs text-slate-500 mt-0.5">常用定期薬: アムロジピン、レバミピド</p>
+              </div>
+              <div class="text-left sm:text-right">
+                <span class="text-xs block text-slate-400">前回の受診日</span>
+                <span class="font-semibold text-sm">2026年6月11日 (経過良好)</span>
+              </div>
+            </div>
+
+            <!-- AI Summary (Conditional display simulated via JS) -->
+            <div id="doctor-ai-summary-card" class="hidden bg-rose-50/80 border border-rose-200 rounded-xl p-5 space-y-4">
+              <div class="flex justify-between items-center">
+                <span class="bg-rose-600 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                  <!-- Activity Icon -->
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                  不調検知：AI自動作成3行要約
+                </span>
+                <span class="text-xs text-rose-800">患者本人によるアプリ問診より自動作成</span>
+              </div>
+
+              <div id="doctor-ai-summary-text" class="bg-white p-4 rounded-lg border border-rose-100 font-mono text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">
+                <!-- AI dynamic summary -->
+              </div>
+
+              <!-- Full Chat Record Link -->
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-rose-700">※カルテ記入時の引用コピーが可能です</span>
+                <button 
+                  onclick="simulateFullChatReview()"
+                  class="text-teal-700 hover:underline font-bold flex items-center gap-0.5"
+                >
+                  <!-- Message Square Icon -->
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                  チャットの全履歴を表示する
+                </button>
+              </div>
+            </div>
+
+            <!-- No AI summary placeholder -->
+            <div id="doctor-ai-placeholder" class="bg-slate-50 border border-slate-200 rounded-xl p-6 text-center text-slate-400 space-y-2">
+              <!-- Check Icon -->
+              <svg class="mx-auto text-slate-300 w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              <p class="text-sm font-semibold text-slate-600">現在、山田さんからの新規相談はありません</p>
+              <p class="text-xs text-slate-400">テストとして「患者モード」に切り替えて「すこししんどい」から不調問診を行ってください。AIが要約をここへ即時配信します。</p>
+            </div>
+
+            <!-- Activity Logs overview -->
+            <div class="space-y-2">
+              <h4 class="font-bold text-slate-700 text-sm">本日の服用・行動履歴：</h4>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <span class="text-xs text-slate-400 block">朝の定期薬</span>
+                  <span id="doc-view-med" class="text-sm font-bold text-amber-600">✕ 未服用</span>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <span class="text-xs text-slate-400 block">頓服の服用履歴</span>
+                  <span id="doc-view-tonpuku" class="text-sm font-bold text-slate-700">服用履歴なし</span>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <span class="text-xs text-slate-400 block">本日の申告体調</span>
+                  <span id="doc-view-condition" class="text-sm font-bold text-slate-400">未入力</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Doctor One-Tap Action Buttons -->
+            <div class="border-t pt-5 space-y-4">
+              <div>
+                <h4 class="font-bold text-slate-800 text-base">医師から患者へのワンタップ指示</h4>
+                <p class="text-xs text-slate-400 mt-0.5">以下のボタンを1つタップするだけで、患者のスマホにリアルタイム返答されます。</p>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button
+                  onclick="submitDoctorAction('urgent')"
+                  class="bg-rose-50 hover:bg-rose-100 border border-rose-300 hover:border-rose-400 text-rose-800 p-4 rounded-xl text-xs font-bold text-left transition-all flex flex-col justify-between h-24"
+                >
+                  <span class="bg-rose-600 text-white px-2 py-0.5 rounded-md scale-95 origin-left">急を要する</span>
+                  <span>🏥 すぐ受診してください</span>
+                </button>
+
+                <button
+                  onclick="submitDoctorAction('regular')"
+                  class="bg-blue-50 hover:bg-blue-100 border border-blue-300 hover:border-blue-400 text-blue-800 p-4 rounded-xl text-xs font-bold text-left transition-all flex flex-col justify-between h-24"
+                >
+                  <span class="bg-blue-600 text-white px-2 py-0.5 rounded-md scale-95 origin-left">次回来院時</span>
+                  <span>📅 次回診察時に確認</span>
+                </button>
+
+                <button
+                  onclick="submitDoctorAction('watch')"
+                  class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 hover:border-emerald-400 text-emerald-800 p-4 rounded-xl text-xs font-bold text-left transition-all flex flex-col justify-between h-24"
+                >
+                  <span class="bg-emerald-600 text-white px-2 py-0.5 rounded-md scale-95 origin-left">安静推奨</span>
+                  <span>💊 様子見・頓服で対応</span>
+                </button>
+              </div>
+
+              <!-- Action Confirmation Banner -->
+              <div id="doctor-submit-success" class="hidden bg-teal-50 border border-teal-200 p-4 rounded-xl flex items-center justify-between text-xs text-teal-800 animate-fade-in">
+                <div class="flex items-center gap-2">
+                  <!-- Check Circle Icon -->
+                  <svg class="text-teal-600 w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                  <span>山田 太郎さんへ指示メッセージを送信しました <strong>(<span id="doc-reply-sent-time">--:--</span>)</strong></span>
+                </div>
+                <button 
+                  onclick="cancelDoctorAction()"
+                  class="text-slate-400 hover:text-slate-600 underline font-bold"
+                >
+                  送信を取り消す
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ================= ROLE 4: FAMILY SYSTEM ================= -->
+    <div id="panel-family" class="role-panel hidden space-y-6">
+      
+      <!-- Monitoring Header -->
+      <div class="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-2xl p-6 border border-teal-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="flex items-center gap-3">
+          <div class="bg-teal-600 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl shadow-inner">
+            父
+          </div>
+          <div>
+            <h3 class="font-bold text-lg text-slate-800">山田 太郎さん（お父様）の見守り画面</h3>
+            <p class="text-xs text-slate-500">お父様のスマホアプリからリアルタイムで共有されています。</p>
+          </div>
+        </div>
+        <div class="bg-white px-3 py-1.5 rounded-full border border-teal-100 text-xs font-bold flex items-center gap-1">
+          <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"></span>
+          <span class="text-slate-600">見守りサーバーと同期中</span>
+        </div>
+      </div>
+
+      <!-- Live Highlights Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Highlight 1: Condition -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-3">
+          <span class="text-xs text-slate-400 font-bold block">今日の体調</span>
+          <div id="family-view-condition" class="text-center py-4 space-y-2">
+            <!-- Dynamic condition view -->
+          </div>
+        </div>
+
+        <!-- Highlight 2: Medications Taken -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-3">
+          <span class="text-xs text-slate-400 font-bold block">本日の薬ののんだ履歴</span>
+          <div class="space-y-2 pt-2" id="family-view-medicines">
+            <!-- Dynamic medicines list -->
+          </div>
+        </div>
+
+        <!-- Highlight 3: Doctor instructions -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-3">
+          <span class="text-xs text-slate-400 font-bold block">主治医の先生からのメッセージ</span>
+          <div id="family-view-doctor-reply">
+            <!-- Dynamic doctor message -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Send Support Message to Dad -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
+        <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1">
+          <!-- Message Icon -->
+          <svg class="text-teal-600 w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          💬 家族からのメッセージを送る（お父様のアプリに届きます）
+        </h4>
+        <div class="flex gap-2">
+          <input 
+            type="text" 
+            id="family-message-input"
+            placeholder="「お薬忘れないでね」「無理しないでね」などを送る"
+            class="flex-grow rounded-xl border border-slate-200 px-4 py-2 text-sm focus:outline-teal-500"
+          />
+          <button 
+            onclick="sendFamilyMessage()"
+            class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1 shadow-sm shrink-0"
+          >
+            <!-- Send Icon -->
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            送信
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ================= MODAL: TONPUKU ================= -->
+  <div id="tonpuku-modal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-xl">
+      <h3 class="text-xl font-bold text-slate-800 text-center">
+        どれをのびましたか？
+      </h3>
+      <p class="text-xs text-slate-400 text-center">
+        登録されているお薬からタップするだけで記録が完了します。
+      </p>
+
+      <div class="space-y-2" id="tonpuku-options-container">
+        <!-- JS Injected Tonpuku buttons -->
+      </div>
+
+      <button
+        onclick="closeTonpukuModal()"
+        class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded-2xl text-sm transition-all"
+      >
+        やめる
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: PRICING / LECOGN BUSINESS ================= -->
+  <div id="pricing-modal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div class="bg-white rounded-3xl p-6 max-w-xl w-full space-y-4 shadow-xl my-8">
+      <div class="flex justify-between items-start">
+        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <!-- Credit Card Icon -->
+          <svg class="text-teal-600 w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+          患者さんに優しい「月額150円の自動加算システム」とは
+        </h3>
+        <button 
+          onclick="closePricingModal()"
+          class="text-slate-400 hover:text-slate-600 font-bold text-xl leading-none"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-600 leading-relaxed">
+        <p>
+          高齢者が多く利用するお薬管理アプリにおける最大の課題は、<strong>「スマホ決済（クレジットカード等）の設定ができない、または嫌がられる」</strong>ことです。
+        </p>
+        <p>
+          この「メディリンク」は、病院・診療所の電子カルテやレセコン（レセプトコンピュータ）と連携するビジネスモデルを導入しています。
+        </p>
+
+        <div class="bg-teal-50 border border-teal-100 p-4 rounded-xl space-y-2">
+          <span class="font-bold text-teal-800">【自動加算＆引き落としの流れ】</span>
+          <ol class="list-decimal list-inside space-y-1 font-medium text-slate-700">
+            <li>病院・クリニックが患者にアプリ紹介と同時に招待用QR・IDを発行。</li>
+            <li>患者はスマホにアプリを入れ、IDを入力するだけで即使えます（クレカ入力不要）。</li>
+            <li>病院側システムで患者のアプリアカウントが診療カルテ（自費項目）と自動紐付けされます。</li>
+            <li>毎月1回、窓口でお会計をする際、診療代と合算して「アプリ利用料: 150円」が自動加算されます。</li>
+            <li>患者さんはいつも通りの窓口決済（または口座振替）をするだけで、アプリ代の決済が確実に完了します。</li>
+          </ol>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-center pt-2">
+          <div class="bg-slate-50 p-2.5 rounded-lg border text-left">
+            <span class="font-bold text-slate-800 block text-center mb-1">患者さんのメリット</span>
+            複雑な会員登録やクレカ登録がゼロ。親御さんのスマホに代わりに入れてあげる際にも、親のカード情報等を入力する必要がありません。
+          </div>
+          <div class="bg-slate-50 p-2.5 rounded-lg border text-left">
+            <span class="font-bold text-slate-800 block text-center mb-1">病院側のメリット</span>
+            患者のお薬服用達成率が上がるため治療計画が立ちやすく、月額150円自費徴収の中から一定のキックバックをシステム維持費として得られます。
+          </div>
+        </div>
+      </div>
+
+      <button
+        onclick="closePricingModal()"
+        class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-2xl text-sm transition-all shadow-sm"
+      >
+        なるほど、分かりました
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= APP TOAST / NOTIFICATION ================= -->
+  <div id="toast-notification" class="hidden fixed bottom-5 right-5 bg-slate-800 text-white text-xs px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 z-50 max-w-sm transition-all">
+    <div id="toast-icon" class="text-emerald-400">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    </div>
+    <div id="toast-text">メッセージが正常に送信されました。</div>
+  </div>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="bg-slate-100 border-t py-6 text-center text-slate-400 text-xs">
+    <p>© 2026 メディリンク（MediLink）ヘルスケア株式会社. All Rights Reserved.</p>
+    <p class="mt-1 text-[10px]">※このシステムはプロトタイプデモであり、実際の医療行為、診断、または処方を行うものではありません。</p>
+  </footer>
+
+  <!-- ================= JAVASCRIPT LOGIC ================= -->
+  <script>
+    // --- APP STATE ---
+    let state = {
+      activeRole: 'patient_easy',
+      medicines: [
+        { id: 'm1', name: 'アムロジピン錠 (血圧を下げる薬)', type: 'regular', schedule: '朝食後', isTaken: false },
+        { id: 'm2', name: 'ロキソプロフェン (痛み止め)', type: 'tonpuku', count: 10, isTaken: false },
+        { id: 'm3', name: 'アセトアミノフェン (解熱鎮痛剤)', type: 'tonpuku', count: 10, isTaken: false },
+        { id: 'm4', name: 'レバミピド (胃を守る薬)', type: 'regular', schedule: '朝・夕食後', isTaken: false }
+      ],
+      todayCondition: null, // 'good' | 'bad' | null
+      tonpukuLog: [], // 服用記録: [{ name, time }]
+      chatStep: 0, // 0:未開始, 1:質問1, 2:質問2, 3:完了
+      symptomAnswers: {},
+      chatMessages: [],
+      isAiLoading: false,
+      aiSummary: '', // 医師向け
+      doctorReply: null, // { status: 'urgent'|'regular'|'watch', message: string, time: string }
+      historyLog: [
+        { date: '6/12', condition: 'good', regularMeds: 100 },
+        { date: '6/13', condition: 'good', regularMeds: 100 },
+        { date: '6/14', condition: 'good', regularMeds: 50 },
+        { date: '6/15', condition: 'good', regularMeds: 100 }
+      ]
+    };
+
+    // Chat definitions
+    const SYMPTOM_QUESTIONS = [
+      {
+        id: 'symptom',
+        text: '一番つらい症状はどれですか？',
+        options: ['熱がある', '頭が痛い', 'お腹が痛い・吐き気', '関節・膝が痛い', 'その他']
+      },
+      {
+        id: 'severity',
+        text: 'その症状はどのくらい続いていますか、または強いですか？',
+        options: ['今朝から（軽い）', '昨日から（我慢できる）', '数日前から（長引いている）', '非常に強い（かなりつらい）']
+      }
+    ];
+
+    // --- RENDER FUNCTIONS ---
+    function render() {
+      renderMedicines();
+      renderChat();
+      renderDoctorView();
+      renderFamilyView();
+      renderNotifications();
+      renderHistoryGrid();
+    }
+
+    // Swapping Roles
+    function switchRole(role) {
+      state.activeRole = role;
+      
+      // Update Tab Button styles
+      const buttons = document.querySelectorAll('.role-btn');
+      buttons.forEach(btn => {
+        btn.className = "role-btn flex items-center gap-1 px-3 py-1.5 rounded-md font-medium whitespace-nowrap transition-all text-teal-100 hover:bg-teal-700/50";
+      });
+      
+      const activeBtn = document.getElementById(`btn-${role}`);
+      if (activeBtn) {
+        activeBtn.className = "role-btn flex items-center gap-1 px-3 py-1.5 rounded-md font-medium whitespace-nowrap transition-all bg-white text-teal-800 shadow-sm";
+      }
+
+      // Show/Hide Panels
+      const panels = document.querySelectorAll('.role-panel');
+      panels.forEach(panel => panel.classList.add('hidden'));
+      document.getElementById(`panel-${role}`).classList.remove('hidden');
+
+      // Clear doctor badge if moving to doctor view
+      if (role === 'doctor') {
+        document.getElementById('doctor-badge').classList.add('hidden');
+      }
+
+      render();
+    }
+
+    // Medicine lists
+    function renderMedicines() {
+      // 1. Easy Mode Medicines
+      const easyContainer = document.getElementById('easy-medicines-list');
+      easyContainer.innerHTML = '';
+      
+      state.medicines.filter(m => m.type === 'regular').forEach(med => {
+        const item = document.createElement('button');
+        item.onclick = () => toggleMedicine(med.id);
+        
+        const cardClass = med.isTaken 
+          ? 'bg-teal-50/80 border-teal-500 text-teal-900 shadow-sm' 
+          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50';
+          
+        const badgeClass = med.isTaken ? 'bg-teal-500 text-white' : 'bg-amber-100 text-amber-800';
+        const circleClass = med.isTaken ? 'bg-teal-500 border-teal-600 text-white' : 'border-slate-300 text-slate-300';
+        
+        item.className = `w-full text-left p-5 rounded-2xl border-2 flex justify-between items-center transition-all ${cardClass}`;
+        item.innerHTML = `
+          <div>
+            <span class="text-xs font-bold px-2.5 py-1 rounded-full ${badgeClass}">
+              ${med.schedule}
+            </span>
+            <h4 class="text-lg font-bold mt-2">${med.name}</h4>
+          </div>
+          <div class="w-12 h-12 rounded-full flex items-center justify-center border-2 ${circleClass}">
+            <!-- Check mark SVG -->
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+        `;
+        easyContainer.appendChild(item);
+      });
+
+      // 2. Normal Mode Medicines
+      const normalContainer = document.getElementById('normal-medicines-list');
+      normalContainer.innerHTML = '';
+
+      state.medicines.forEach(med => {
+        const row = document.createElement('div');
+        row.className = "py-3 flex justify-between items-center";
+        
+        const badgeLabel = med.type === 'regular' ? `${med.schedule} (定期)` : '頓服薬';
+        const badgeClass = med.type === 'regular' ? 'bg-teal-50 text-teal-700' : 'bg-amber-50 text-amber-800';
+        
+        let actionBtn = '';
+        if (med.type === 'regular') {
+          const btnClass = med.isTaken 
+            ? 'bg-teal-600 text-white hover:bg-teal-700' 
+            : 'bg-slate-100 text-slate-600 hover:bg-slate-200';
+          
+          actionBtn = `
+            <button onclick="toggleMedicine('${med.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${btnClass}">
+              ${med.isTaken ? '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>服用済み' : 'のんだ'}
+            </button>
+          `;
+        } else {
+          actionBtn = `
+            <button onclick="takeTonpuku('${med.name}')" class="bg-amber-100 hover:bg-amber-200 active:bg-amber-300 text-amber-800 px-3 py-1.5 rounded-lg text-xs font-bold transition-all">
+              のんだ (記録)
+            </button>
+          `;
+        }
+
+        row.innerHTML = `
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${badgeClass}">
+                ${badgeLabel}
+              </span>
+            </div>
+            <h5 class="font-bold text-sm text-slate-700">${med.name}</h5>
+          </div>
+          ${actionBtn}
+        `;
+        normalContainer.appendChild(row);
+      });
+
+      // 3. Tonpuku Logs output
+      const tonpukuLogContainer = document.getElementById('easy-tonpuku-log-container');
+      const tonpukuLogsList = document.getElementById('easy-tonpuku-logs-list');
+      if (state.tonpukuLog.length > 0) {
+        tonpukuLogContainer.classList.remove('hidden');
+        tonpukuLogsList.innerHTML = state.tonpukuLog.map(log => `
+          <span class="mr-3 inline-block bg-amber-100/60 px-2 py-0.5 rounded">${log.name} (${log.time})</span>
+        `).join('');
+      } else {
+        tonpukuLogContainer.classList.add('hidden');
+      }
+    }
+
+    function toggleMedicine(id) {
+      state.medicines = state.medicines.map(m => {
+        if (m.id === id) {
+          return { ...m, isTaken: !m.isTaken };
+        }
+        return m;
+      });
+      render();
+    }
+
+    // Tonpuku Modal actions
+    function openTonpukuModal() {
+      const container = document.getElementById('tonpuku-options-container');
+      container.innerHTML = '';
+
+      state.medicines.filter(m => m.type === 'tonpuku').forEach(med => {
+        const btn = document.createElement('button');
+        btn.onclick = () => takeTonpuku(med.name);
+        btn.className = "w-full text-left p-4 rounded-2xl border-2 border-slate-200 hover:border-amber-500 hover:bg-amber-50 font-bold text-base transition-all flex justify-between items-center";
+        btn.innerHTML = `
+          <span>💊 ${med.name}</span>
+          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        `;
+        container.appendChild(btn);
+      });
+
+      document.getElementById('tonpuku-modal').classList.remove('hidden');
+    }
+
+    function closeTonpukuModal() {
+      document.getElementById('tonpuku-modal').classList.add('hidden');
+    }
+
+    function takeTonpuku(name) {
+      const time = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+      state.tonpukuLog.unshift({ name, time });
+      closeTonpukuModal();
+
+      // Show toast alert
+      showToast(`💊 頓服薬「${name}」の服用を記録しました。`, "amber");
+
+      // System feedback into chat
+      if (state.chatStep > 0) {
+        state.chatMessages.push({
+          sender: 'system',
+          text: `【お薬記録】頓服薬「${name}」を服用しました (${time})`
+        });
+      }
+      render();
+    }
+
+    // --- CONDITION MANAGEMENT ---
+    function setCondition(status) {
+      state.todayCondition = status;
+
+      // Update Easy UI buttons
+      const btnGood = document.getElementById('easy-cond-good');
+      const btnBad = document.getElementById('easy-cond-bad');
+      const successMsg = document.getElementById('easy-success-msg');
+
+      if (status === 'good') {
+        btnGood.className = "py-6 px-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-3 transition-all border-emerald-500 bg-emerald-50 text-emerald-800 ring-4 ring-emerald-100";
+        btnBad.className = "py-6 px-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-3 transition-all border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-700";
+        successMsg.classList.remove('hidden');
+        
+        // Hide chat section if good
+        document.getElementById('easy-chat-section').classList.add('hidden');
+        document.getElementById('normal-chat-container').classList.add('hidden');
+        document.getElementById('normal-chat-placeholder').classList.remove('hidden');
+        state.chatStep = 0;
+      } else {
+        btnGood.className = "py-6 px-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-3 transition-all border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-700";
+        btnBad.className = "py-6 px-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-3 transition-all border-rose-500 bg-rose-50 text-rose-800 ring-4 ring-rose-100";
+        successMsg.classList.add('hidden');
+
+        // Start Chat Automatically
+        document.getElementById('easy-chat-section').classList.remove('hidden');
+        document.getElementById('normal-chat-container').classList.remove('hidden');
+        document.getElementById('normal-chat-placeholder').classList.add('hidden');
+        
+        state.chatStep = 1;
+        state.chatMessages = [
+          { sender: 'ai', text: '体調がお辛いのですね。状況を簡単にお聞きして、かかりつけの先生に要約を共有します。以下の質問にお答えください。' }
+        ];
+      }
+      render();
+    }
+
+    function closeChat() {
+      document.getElementById('easy-chat-section').classList.add('hidden');
+      document.getElementById('normal-chat-container').classList.add('hidden');
+      document.getElementById('normal-chat-placeholder').classList.remove('hidden');
+      state.todayCondition = null;
+      state.chatStep = 0;
+      render();
+    }
+
+    // --- CHAT SYSTEM ---
+    function renderChat() {
+      const easyMessagesContainer = document.getElementById('easy-chat-messages');
+      const normalMessagesContainer = document.getElementById('normal-chat-messages');
+      
+      const renderMsgHtml = (msg) => {
+        if (msg.sender === 'system') {
+          return `
+            <div class="flex justify-center">
+              <div class="bg-amber-100 text-amber-800 text-[11px] px-3 py-1 rounded-full font-semibold">
+                ${msg.text}
+              </div>
+            </div>
+          `;
+        }
+        
+        const isUser = msg.sender === 'user';
+        const alignment = isUser ? 'justify-end' : 'justify-start';
+        const bubbleStyle = isUser 
+          ? 'bg-teal-600 text-white rounded-br-none' 
+          : 'bg-white text-slate-800 shadow-sm border border-slate-100 rounded-bl-none';
+          
+        return `
+          <div class="flex ${alignment}">
+            <div class="max-w-[85%] rounded-2xl p-3.5 text-xs font-medium leading-relaxed ${bubbleStyle}">
+              ${msg.text}
+            </div>
+          </div>
+        `;
+      };
+
+      const messagesHtml = state.chatMessages.map(renderMsgHtml).join('');
+      easyMessagesContainer.innerHTML = messagesHtml;
+      normalMessagesContainer.innerHTML = messagesHtml;
+
+      // Scroll to bottom
+      easyMessagesContainer.scrollTop = easyMessagesContainer.scrollHeight;
+      normalMessagesContainer.scrollTop = normalMessagesContainer.scrollHeight;
+
+      // Render loaders & inputs
+      const easyInputs = document.getElementById('easy-chat-inputs');
+      const normalInputs = document.getElementById('normal-chat-inputs');
+
+      if (state.isAiLoading) {
+        easyInputs.innerHTML = `
+          <div class="flex justify-start">
+            <div class="bg-white text-slate-500 text-xs rounded-2xl p-4 shadow-sm border border-slate-100 rounded-bl-none flex items-center gap-2">
+              <span class="animate-bounce">●</span>
+              <span class="animate-bounce delay-100">●</span>
+              <span class="animate-bounce delay-200">●</span>
+              AIがアドバイスを考え、先生への要約を作成しています...
+            </div>
+          </div>
+        `;
+        normalInputs.innerHTML = `<p class="text-slate-400 text-[10px] italic">AI要約を生成中...</p>`;
+        return;
+      }
+
+      let inputsHtml = '';
+      if (state.chatStep === 1) {
+        inputsHtml = `
+          <p class="text-xs text-slate-500 font-bold mb-1.5">一番近い症状を選んでください：</p>
+          <div class="grid grid-cols-2 gap-2">
+            ${SYMPTOM_QUESTIONS[0].options.map((opt, i) => `
+              <button onclick="handleAnswerSelect('symptom', '${opt}')" class="bg-teal-50 hover:bg-teal-100 active:bg-teal-200 text-teal-800 border border-teal-200 py-3 px-2 rounded-xl text-xs font-bold transition-all text-center">
+                ${opt}
+              </button>
+            `).join('')}
+          </div>
+        `;
+      } else if (state.chatStep === 2) {
+        inputsHtml = `
+          <p class="text-xs text-slate-500 font-bold mb-1.5">状況・長さはどのくらいですか：</p>
+          <div class="grid grid-cols-1 gap-2">
+            ${SYMPTOM_QUESTIONS[1].options.map((opt, i) => `
+              <button onclick="handleAnswerSelect('severity', '${opt}')" class="bg-teal-50 hover:bg-teal-100 active:bg-teal-200 text-teal-800 border border-teal-200 py-3 px-4 rounded-xl text-xs font-bold transition-all text-left">
+                ${opt}
+              </button>
+            `).join('')}
+          </div>
+        `;
+      } else if (state.chatStep === 3) {
+        inputsHtml = `
+          <div class="bg-teal-50 border border-teal-100 rounded-xl p-3 text-xs text-teal-800 flex items-start gap-2">
+            <!-- Check Circle icon -->
+            <svg class="text-teal-600 w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <div>
+              <p class="font-bold">相談を受け付けました！</p>
+              <p class="mt-0.5">かかりつけ医の医師画面にあなたの体調不良の通知と要約が共有されました。お返事まで今しばらくお待ちください。</p>
+            </div>
+          </div>
+        `;
+      }
+
+      easyInputs.innerHTML = inputsHtml;
+      normalInputs.innerHTML = inputsHtml;
+    }
+
+    async function handleAnswerSelect(questionId, option) {
+      state.symptomAnswers[questionId] = option;
+      state.chatMessages.push({ sender: 'user', text: option });
+
+      if (state.chatStep === 1) {
+        state.chatStep = 2;
+        state.chatMessages.push({ sender: 'ai', text: SYMPTOM_QUESTIONS[1].text });
+        render();
+      } else if (state.chatStep === 2) {
+        state.isAiLoading = true;
+        render();
+        await generateAiConsultation(state.symptomAnswers);
+      }
+    }
+
+    // AI Generation (Calling Gemini 2.5 Flash Preview API)
+    async function generateAiConsultation(answers) {
+      const apiKeyVal = document.getElementById('api-key-input').value.trim();
+      
+      const takenMeds = state.medicines.filter(m => m.type === 'regular' && m.isTaken).map(m => m.name).join('、') || 'なし';
+      const regularMedsStatus = `本日の定期薬服用: ${takenMeds}`;
+      const recentTonpuku = state.tonpukuLog.length > 0 ? `最近服用した頓服薬: ${state.tonpukuLog.map(t => `${t.name}(${t.time})`).join(', ')}` : '頓服薬の服用なし';
+
+      const userPrompt = `
+        患者の体調不良の訴えがあります。
+        - 主な症状: ${answers.symptom}
+        - 経過・強さ: ${answers.severity}
+        - 薬の服用状況: ${regularMedsStatus}, ${recentTonpuku}
+
+        以下のJSON形式で回答してください。患者向けの優しいアドバイスと、医師向けの「3行要約」が必要です。
+      `;
+
+      const systemPrompt = `
+        あなたは親身なかかりつけ医アプリのAIアシスタントです。
+        出力は以下のJSONフォーマットを完全に厳守してください。
+        {
+          "replyToPatient": "患者への共感と、無理せず安静にするよう伝える平易で温かい言葉（高齢者でも分かりやすい日本語）。",
+          "summaryForDoctor": "医師へ引き継ぐための3行の簡潔な要約（1.症状と期間、2.薬の服用、3.現在の要警戒度や特記事項）。改行を含めて3行に収まるようにしてください。"
+        }
+      `;
+
+      // API Call with Exponential Backoff Config
+      const maxRetries = 5;
+      const delay = (ms) => new Promise(res => setTimeout(res, ms));
+
+      if (apiKeyVal) {
+        let currentDelay = 1000;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            // Updated Endpoint: gemini-2.5-flash-preview-09-2025
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKeyVal}`;
+            
+            const payload = {
+              contents: [{ parts: [{ text: userPrompt }] }],
+              generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                  type: "OBJECT",
+                  properties: {
+                    replyToPatient: { type: "STRING" },
+                    summaryForDoctor: { type: "STRING" }
+                  },
+                  required: ["replyToPatient", "summaryForDoctor"]
+                }
+              },
+              systemInstruction: {
+                parts: [{ text: systemPrompt }]
+              }
+            };
+
+            const res = await fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+
+            const data = await res.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            
+            if (text) {
+              const parsed = JSON.parse(text);
+              state.chatMessages.push({ sender: 'ai', text: parsed.replyToPatient });
+              state.aiSummary = parsed.summaryForDoctor;
+              
+              // Trigger notification for doctor view
+              document.getElementById('doctor-badge').classList.remove('hidden');
+              break; // Success, exit retry loop
+            } else {
+              throw new Error('No valid response from model');
+            }
+
+          } catch (err) {
+            console.warn(`Attempt ${attempt} failed: ${err.message}`);
+            if (attempt === maxRetries) {
+              // Final fallback
+              showErrorFallback(answers);
+            } else {
+              await delay(currentDelay);
+              currentDelay *= 2; // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+            }
+          }
+        }
+      } else {
+        // High Quality Mock Engine when API key is missing
+        await delay(1500);
+        
+        let mockReply = `お辛いですね。「${answers.symptom}」が「${answers.severity}」とのこと、とても心配です。まずは体を暖かくして安静にして、水分をこまめに補給してください。`;
+        if (answers.symptom === '熱がある') {
+          mockReply += ' 熱が高い場合は頓服の解熱剤をお飲みいただき、横になって休んでください。この内容はかかりつけの先生にしっかりお届けしました。';
+        } else {
+          mockReply += ' かかりつけの医師に相談データを送信しました。先生からのメッセージが届くまで無理せず休んでお待ちください。';
+        }
+
+        const mockSummary = `1. 山田 太郎様、${answers.symptom}を訴え (${answers.severity})\n2. 定期薬は一部未服用。頓服の確認を希望。\n3. 高齢のため、脱水および急な体温変化に注意が必要。`;
+        
+        state.chatMessages.push({ sender: 'ai', text: mockReply });
+        state.aiSummary = mockSummary;
+        
+        // Doctor Alert Notification Trigger
+        document.getElementById('doctor-badge').classList.remove('hidden');
+      }
+
+      state.isAiLoading = false;
+      state.chatStep = 3;
+      render();
+    }
+
+    function showErrorFallback(answers) {
+      state.chatMessages.push({ 
+        sender: 'ai', 
+        text: '通信状況により自動回答が制限されていますが、相談内容は医師へ送信されました。暖かくして安静にお過ごしください。' 
+      });
+      state.aiSummary = `1. 患者から「${answers.symptom}（${answers.severity}）」の申告あり。\n2. ネットワーク問題で簡易転送を検知。\n3. 頓服薬の服用歴あり。安静指導が必要。`;
+      document.getElementById('doctor-badge').classList.remove('hidden');
+    }
+
+    // --- DOCTOR WEB DISPLAY ---
+    function renderDoctorView() {
+      const summaryCard = document.getElementById('doctor-ai-summary-card');
+      const placeholder = document.getElementById('doctor-ai-placeholder');
+      const summaryText = document.getElementById('doctor-ai-summary-text');
+      const alertBadge = document.getElementById('doctor-alert-badge');
+      const patientCard = document.getElementById('doctor-patient-yamada');
+
+      // Sync status indicators
+      const isMorningMedTaken = state.medicines[0].isTaken;
+      const viewMed = document.getElementById('doc-view-med');
+      viewMed.innerText = isMorningMedTaken ? '● 服用済み' : '✕ 未服用';
+      viewMed.className = `text-sm font-bold ${isMorningMedTaken ? 'text-emerald-600' : 'text-amber-600'}`;
+
+      const viewTonpuku = document.getElementById('doc-view-tonpuku');
+      viewTonpuku.innerText = state.tonpukuLog.length > 0 
+        ? `${state.tonpukuLog[0].name} (${state.tonpukuLog[0].time})` 
+        : '服用履歴なし';
+
+      const viewCondition = document.getElementById('doc-view-condition');
+      if (state.todayCondition === 'good') {
+        viewCondition.innerText = '😄 元気';
+        viewCondition.className = 'text-sm font-bold text-emerald-600';
+      } else if (state.todayCondition === 'bad') {
+        viewCondition.innerText = '😢 しんどい';
+        viewCondition.className = 'text-sm font-bold text-rose-600';
+      } else {
+        viewCondition.innerText = '未入力';
+        viewCondition.className = 'text-sm font-bold text-slate-400';
+      }
+
+      // If AI Summary is present, show alert
+      if (state.aiSummary) {
+        summaryCard.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+        summaryText.innerText = state.aiSummary;
+        alertBadge.classList.remove('hidden');
+        patientCard.className = "p-3 rounded-xl border-2 border-rose-300 bg-rose-50/50 cursor-pointer transition-all";
+      } else {
+        summaryCard.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+        alertBadge.classList.add('hidden');
+        patientCard.className = "p-3 rounded-xl border-2 border-teal-500 bg-teal-50/20 cursor-pointer transition-all";
+      }
+    }
+
+    function simulateFullChatReview() {
+      // Open patient chat parameters inside doctor console (easy demonstration)
+      state.chatMessages = [
+        { sender: 'user', text: `【山田さん申告】${state.symptomAnswers.symptom || '熱がある'}` },
+        { sender: 'user', text: `【経過】${state.symptomAnswers.severity || '今朝から'}` },
+        { sender: 'ai', text: `定期薬の確認・頓服薬の服用ログあり。要医師確認。` }
+      ];
+      state.chatStep = 1;
+      state.todayCondition = 'bad';
+      showToast("🔍 チャットの全履歴を取得しました (カルテにコピー可能です)", "blue");
+      render();
+    }
+
+    function submitDoctorAction(actionType) {
+      const actionLabels = {
+        urgent: '🏥 すぐに受診してください（診療時間内、または緊急外来）',
+        regular: '📅 次回の定期診察時に経過を教えてください',
+        watch: '💊 安静にして様子を見て大丈夫です（頓服薬を活用してください）'
+      };
+
+      const customComments = {
+        urgent: '熱が高いため、診療時間内にクリニックへお越しください。道中、水分補給を忘れないように。',
+        regular: '朝の定期薬を飲み忘れているようです。お昼に必ず服用し、次回診察時に様子を聞かせてください。',
+        watch: '頓服の解熱鎮痛剤を服用して、暖かくして横になっていてください。明日も下がらなければ受診を。'
+      };
+
+      const time = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+      state.doctorReply = {
+        status: actionType,
+        message: `${actionLabels[actionType]} \n\n【先生からの伝言】\n${customComments[actionType]}`,
+        time: time
+      };
+
+      document.getElementById('doctor-submit-success').classList.remove('hidden');
+      document.getElementById('doc-reply-sent-time').innerText = time;
+
+      showToast("👨‍⚕️ 患者へ指示メッセージを送信しました！", "teal");
+      render();
+    }
+
+    function cancelDoctorAction() {
+      state.doctorReply = null;
+      document.getElementById('doctor-submit-success').classList.add('hidden');
+      showToast("指示の送信を取り消しました。", "slate");
+      render();
+    }
+
+    // --- NOTIFICATION BANNER LOGIC ---
+    function renderNotifications() {
+      const easyBanner = document.getElementById('easy-doctor-notification');
+      const normalBanner = document.getElementById('normal-doctor-notification');
+
+      if (state.doctorReply) {
+        // Easy Mode Banner fill
+        easyBanner.classList.remove('hidden');
+        document.querySelectorAll('.reply-time').forEach(el => el.innerText = state.doctorReply.time);
+        
+        let title = "🏥 すぐに診察に来てください";
+        if (state.doctorReply.status === 'regular') title = "📅 次回の診察時に教えてください";
+        if (state.doctorReply.status === 'watch') title = "💊 様子をみて大丈夫です";
+        
+        document.getElementById('easy-doctor-title').innerText = title;
+        document.getElementById('easy-doctor-body').innerText = state.doctorReply.message;
+
+        // Normal Mode Banner fill
+        normalBanner.classList.remove('hidden');
+        document.getElementById('normal-doctor-body').innerText = state.doctorReply.message;
+      } else {
+        easyBanner.classList.add('hidden');
+        normalBanner.classList.add('hidden');
+      }
+    }
+
+    // --- FAMILY VIEW SYNC ---
+    function renderFamilyView() {
+      const familyCondContainer = document.getElementById('family-view-condition');
+      
+      // 1. Condition card
+      if (state.todayCondition === 'good') {
+        familyCondContainer.innerHTML = `
+          <span class="text-5xl block">😄</span>
+          <span class="font-bold text-emerald-700 block text-sm">「元気です」と申告</span>
+          <span class="text-[10px] text-slate-400">（本日朝のチェック完了）</span>
+        `;
+      } else if (state.todayCondition === 'bad') {
+        familyCondContainer.innerHTML = `
+          <span class="text-5xl block">😢</span>
+          <span class="font-bold text-rose-700 block text-sm">「すこししんどい」と申告</span>
+          <span class="text-[10px] text-slate-400">AIが医師への要約を引き継ぎ完了</span>
+        `;
+      } else {
+        familyCondContainer.innerHTML = `
+          <span class="text-5xl block">💤</span>
+          <span class="font-bold text-slate-600 block text-sm">まだ記録がありません</span>
+          <span class="text-[10px] text-slate-400">お父様はまだアプリを開いていません</span>
+        `;
+      }
+
+      // 2. Medicine list sync
+      const familyMedsList = document.getElementById('family-view-medicines');
+      familyMedsList.innerHTML = '';
+      
+      state.medicines.filter(m => m.type === 'regular').forEach(med => {
+        const item = document.createElement('div');
+        item.className = "flex justify-between items-center text-xs";
+        
+        const badgeStyle = med.isTaken ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800';
+        const label = med.isTaken ? '服用済み' : '未服用';
+
+        item.innerHTML = `
+          <span class="font-medium text-slate-600">${med.name}</span>
+          <span class="font-bold px-2 py-0.5 rounded ${badgeStyle}">${label}</span>
+        `;
+        familyMedsList.appendChild(item);
+      });
+
+      // Append Tonpuku logs to family list if exist
+      if (state.tonpukuLog.length > 0) {
+        const tonpukuDiv = document.createElement('div');
+        tonpukuDiv.className = "pt-2 border-t border-dashed mt-2";
+        tonpukuDiv.innerHTML = `
+          <span class="text-[10px] text-amber-800 font-bold block mb-1">頓服薬の服用歴:</span>
+          ${state.tonpukuLog.map(l => `<p class="text-[11px] text-amber-700">・${l.name} (${l.time})</p>`).join('')}
+        `;
+        familyMedsList.appendChild(tonpukuDiv);
+      }
+
+      // 3. Doctor Advice Card
+      const doctorAdviceContainer = document.getElementById('family-view-doctor-reply');
+      if (state.doctorReply) {
+        let actionLabel = state.doctorReply.status === 'urgent' ? '受診要請' : state.doctorReply.status === 'regular' ? '次回来診時確認' : '安静観察';
+        
+        doctorAdviceContainer.innerHTML = `
+          <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-xl text-xs space-y-2">
+            <div class="flex items-center gap-1.5 font-bold text-indigo-950">
+              <svg class="text-indigo-600 w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+              <span>${actionLabel}</span>
+            </div>
+            <p class="text-slate-700 leading-relaxed font-medium">
+              ${state.doctorReply.message}
+            </p>
+          </div>
+        `;
+      } else {
+        doctorAdviceContainer.innerHTML = `
+          <div class="text-center py-4 text-xs text-slate-400">
+            現在、お父様への特記事項や不調要請はありません。順調です。
+          </div>
+        `;
+      }
+    }
+
+    function sendFamilyMessage() {
+      const input = document.getElementById('family-message-input');
+      const val = input.value.trim();
+      if (!val) return;
+
+      // In a real application, this message goes to the database and appears on patient's device
+      showToast(`💬 「${val}」をお父様に送信しました！`, "emerald");
+      input.value = '';
+    }
+
+    // --- OTHER INTERFACES ---
+    function renderHistoryGrid() {
+      const grid = document.getElementById('history-logs-grid');
+      grid.innerHTML = '';
+
+      // Standard logs
+      state.historyLog.forEach(log => {
+        const item = document.createElement('div');
+        item.className = "bg-slate-50 rounded-xl p-3 space-y-1";
+        item.innerHTML = `
+          <span class="text-xs text-slate-400 block">${log.date}</span>
+          <span class="text-xl block">${log.condition === 'good' ? '😄' : '😢'}</span>
+          <span class="text-[10px] font-bold bg-teal-50 text-teal-800 px-1.5 py-0.5 rounded-full inline-block">
+            服用 ${log.regularMeds}%
+          </span>
+        `;
+        grid.appendChild(item);
+      });
+
+      // Today's reactive status log
+      const todayItem = document.createElement('div');
+      todayItem.className = "bg-teal-50 border border-teal-100 rounded-xl p-3 flex flex-col justify-center items-center";
+      
+      let condEmoji = 'ー';
+      if (state.todayCondition === 'good') condEmoji = '😄';
+      if (state.todayCondition === 'bad') condEmoji = '😢';
+
+      todayItem.innerHTML = `
+        <span class="text-[10px] text-teal-600 font-bold block">今日</span>
+        <span class="text-xl block">${condEmoji}</span>
+        <span class="text-[9px] text-slate-400">${state.todayCondition ? '記録あり' : '未記録'}</span>
+      `;
+      grid.appendChild(todayItem);
+    }
+
+    // --- UI MODAL & TOAST COMPONENT ---
+    function openPricingModal() {
+      document.getElementById('pricing-modal').classList.remove('hidden');
+    }
+    function closePricingModal() {
+      document.getElementById('pricing-modal').classList.add('hidden');
+    }
+
+    function showToast(text, color = "teal") {
+      const toast = document.getElementById('toast-notification');
+      const toastText = document.getElementById('toast-text');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastText.innerText = text;
+
+      // Configure Dynamic Theme colors
+      const colorMap = {
+        teal: { bg: "bg-teal-800", text: "text-emerald-400" },
+        amber: { bg: "bg-amber-800", text: "text-amber-400" },
+        rose: { bg: "bg-rose-900", text: "text-rose-400" },
+        slate: { bg: "bg-slate-800", text: "text-slate-300" },
+        blue: { bg: "bg-blue-800", text: "text-blue-300" },
+        emerald: { bg: "bg-emerald-800", text: "text-emerald-300" }
+      };
+
+      const selected = colorMap[color] || colorMap.teal;
+      toast.className = `fixed bottom-5 right-5 ${selected.bg} text-white text-xs px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 z-50 max-w-sm transition-all duration-300 transform translate-y-0 opacity-100`;
+      toastIcon.className = selected.text;
+
+      // Automatically vanish after 3.5s
+      setTimeout(() => {
+        toast.className = "hidden";
+      }, 3500);
+    }
+
+    // --- INITIALIZATION ---
+    window.onload = function() {
+      render();
+    };
+  </script>
+</body>
+</html>
